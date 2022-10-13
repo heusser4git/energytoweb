@@ -52,8 +52,14 @@ public class ShellyEM3Service {
                 }
             }
         } catch (IOException e) {
-            System.out.println("Probleme bei der GET Abfrage des Shelly");
-            throw new RuntimeException(e);
+            System.out.println("Probleme bei der GET Abfrage des Shelly: Versuche in 5s nochmals.");
+            try {
+                Thread.sleep(5000);
+            } catch (InterruptedException ex) {
+                throw new RuntimeException(ex);
+            }
+            getShellyDataByHttpGet();
+            //throw new RuntimeException(e);
         }
     }
 

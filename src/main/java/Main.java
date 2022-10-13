@@ -1,3 +1,4 @@
+import services.Database;
 import services.HiveMQService;
 import services.PvOutputService;
 import services.ShellyEM3Service;
@@ -12,7 +13,7 @@ public class Main {
         HiveMQService hiveMQService = new HiveMQService();
         ShellyEM3Service shellyEM3Service = new ShellyEM3Service("192.168.1.3");
         shellyEM3Service.addListener(pvOutputService);
-        shellyEM3Service.addListener(hiveMQService);
+        //shellyEM3Service.addListener(hiveMQService);
 
         ScheduledExecutorService executor = Executors.newScheduledThreadPool(1);
         Runnable task = () -> {

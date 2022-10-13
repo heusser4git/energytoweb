@@ -24,8 +24,13 @@ public class PvOutputService implements EventListener {
     private final CloseableHttpClient httpClient = HttpClients.createDefault();
     private Power currentPower;
     private int laststamp = 0;
+    private Database database;
+    private boolean testmode;
 
     public PvOutputService(boolean testmode) {
+        this.database = new Database("PvOutput.db");
+        this.testmode = testmode;
+
         if(testmode) {
             sysid = PVOutputSecretsProd.systemId;
             apikey = PVOutputSecretsProd.apikey;
@@ -50,15 +55,13 @@ public class PvOutputService implements EventListener {
         if(currentPower != null) {
             System.out.println("writeToWeb -> Power: " + currentPower.getTotalpower());
             Date date = new Date();
-            try {
-                writeToPVoutput(date, currentPower);
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
+            writeToPVoutput(currentPower);
+            writeDbEntriesToWeb();
         }
     }
 
-    private void writeToPVoutput(Date date, Power power) throws IOException {
+    private void writeToPVoutput(Power power) {
+        Date date = new Date(power.getUnixtimestamp() * 1000);
         SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyyMMdd");
         String datum = simpleDateFormat.format(date);
 
@@ -85,8 +88,30 @@ public class PvOutputService implements EventListener {
                 String result = EntityUtils.toString(entity);
                 System.out.println(result);
             }
+        } catch (IOException e) {
+            System.out.println("writeToPVoutput - no Connection: " + e.getMessage());
+            // no internet write to db
+            writeToDb(date, power);
+            //throw new RuntimeException(e);
         }
-        // TODO catch the connection-Error and try to reconnect... otherwise the app shuts down
+    }
+
+    private void writeDbEntriesToWeb() {
+        for (Power power : database.read()) {
+            writeToPVoutput(power);
+            database.delPower(power);
+            try {
+                // sleep because there are only 60 entries per hour allowed on pvOutput.org
+                Thread.sleep(61000);
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+        }
+    }
+
+    private void writeToDb(Date date, Power power) {
+        power.setUnixtimestamp((int) (date.getTime()/1000));
+        database.addPower(power);
     }
 
     public void setCurrentPower(Power currentPower) {
