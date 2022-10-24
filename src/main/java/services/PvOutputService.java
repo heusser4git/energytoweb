@@ -24,12 +24,10 @@ public class PvOutputService implements EventListener {
     private final CloseableHttpClient httpClient = HttpClients.createDefault();
     private Power currentPower;
     private int laststamp = 0;
-    private Database database;
-    private boolean testmode;
+    private final Database database;
 
     public PvOutputService(boolean testmode) {
         this.database = new Database("PvOutput.db");
-        this.testmode = testmode;
 
         if(testmode) {
             sysid = PVOutputSecretsProd.systemId;
@@ -54,14 +52,13 @@ public class PvOutputService implements EventListener {
     public void writeToWeb() {
         if(currentPower != null) {
             System.out.println("writeToWeb -> Power: " + currentPower.getTotalpower());
-            Date date = new Date();
             writeToPVoutput(currentPower);
             writeDbEntriesToWeb();
         }
     }
 
     private void writeToPVoutput(Power power) {
-        Date date = new Date(power.getUnixtimestamp() * 1000);
+        Date date = new Date((long)power.getUnixtimestamp() * 1000);
         SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyyMMdd");
         String datum = simpleDateFormat.format(date);
 
@@ -83,11 +80,9 @@ public class PvOutputService implements EventListener {
             Header headers = entity.getContentType();
             System.out.println(headers);
 
-            if (entity != null) {
-                // return it as a String
-                String result = EntityUtils.toString(entity);
-                System.out.println(result);
-            }
+            // return it as a String
+            String result = EntityUtils.toString(entity);
+            System.out.println(result);
         } catch (IOException e) {
             System.out.println("writeToPVoutput - no Connection: " + e.getMessage());
             // no internet write to db
